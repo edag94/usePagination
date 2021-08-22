@@ -17,9 +17,10 @@ export const usePagination = ({initialItemCount, initialPageNumber = 1, initialI
   const canGetPrev = currentPage > 1;
 
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = currentPage !== maxPage ? startIndex + itemsPerPage : initialItemCount;
+  const endIndex = currentPage !== maxPage ? startIndex + itemsPerPage : lastItemIndex;
 
   const setItemsPerPage = (newItemsPerPage: number) => {
+    // Jump to page that would contain the current startIndex
     const newStartIndexPageNumber = Math.floor(startIndex / newItemsPerPage) + 1;
     setCurrentPage(newStartIndexPageNumber);
     _setItemsPerPage(newItemsPerPage);
@@ -42,6 +43,7 @@ export const usePagination = ({initialItemCount, initialPageNumber = 1, initialI
   };
 
   const jump = (page: number) => {
+    // Math.max and Math.min to stay within the page range [1, maxPage]
     const pageNumber = Math.max(1, page);
     setCurrentPage((_currentPage) => Math.min(pageNumber, maxPage));
   };
