@@ -6,7 +6,21 @@ export interface PaginationConfig {
   initialItemsPerPage: number
 }
 
-export const usePagination = ({initialItemCount, initialPageNumber = 1, initialItemsPerPage = 10}: PaginationConfig) => {
+export interface PaginationReturn {
+  startIndex: number;
+  endIndex: number;
+  canGetNext: boolean;
+  next: () => void;
+  canGetPrev: boolean;
+  prev: () => void;
+  jump: (page: number) => void;
+  getCurrentData: (data: unknown[]) => unknown[];
+  currentPage: number;
+  maxPage: number;
+  setItemsPerPage: (newItemsPerPage: number) => void;
+}
+
+export const usePagination = ({initialItemCount, initialPageNumber = 1, initialItemsPerPage = 10}: PaginationConfig): PaginationReturn => {
   const [currentPage, setCurrentPage] = React.useState(initialPageNumber);
   const [itemsPerPage, _setItemsPerPage] = React.useState(initialItemsPerPage);
 
@@ -20,13 +34,17 @@ export const usePagination = ({initialItemCount, initialPageNumber = 1, initialI
   const endIndex = currentPage !== maxPage ? startIndex + itemsPerPage : lastItemIndex;
 
   const setItemsPerPage = (newItemsPerPage: number) => {
+    if (newItemsPerPage < 1) {
+      // just use old itemsPerPage, as items per page cannot be less than 1
+      throw new Error("items per page must be greater than 0");
+    }
     // Jump to page that would contain the current startIndex
     const newStartIndexPageNumber = Math.floor(startIndex / newItemsPerPage) + 1;
     setCurrentPage(newStartIndexPageNumber);
     _setItemsPerPage(newItemsPerPage);
   };
 
-  const currentData = (data: unknown[]) => {
+  const getCurrentData = (data: unknown[]) => {
     return data.slice(startIndex, endIndex)
   }
 
@@ -43,7 +61,9 @@ export const usePagination = ({initialItemCount, initialPageNumber = 1, initialI
   };
 
   const jump = (page: number) => {
-    // Math.max and Math.min to stay within the page range [1, maxPage]
+    if (page < 1 || page > maxPage) {
+      throw new Error(`Page to jump to must be [1, maxPage]`)
+    }
     const pageNumber = Math.max(1, page);
     setCurrentPage((_currentPage) => Math.min(pageNumber, maxPage));
   };
@@ -56,7 +76,7 @@ export const usePagination = ({initialItemCount, initialPageNumber = 1, initialI
     canGetPrev,
     prev,
     jump,
-    currentData,
+    getCurrentData,
     currentPage,
     maxPage,
     setItemsPerPage,
