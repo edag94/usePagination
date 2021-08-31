@@ -24,7 +24,7 @@ export const usePagination = ({itemCount, initialPageNumber = 1, initialItemsPer
   const [currentPage, setCurrentPage] = React.useState(initialPageNumber);
   const [itemsPerPage, _setItemsPerPage] = React.useState(initialItemsPerPage);
 
-  const lastItemIndex = itemCount - 1;
+  const lastItemIndex = Math.max(0, itemCount - 1); // in case empty, make last item index 0
   const maxPage = Math.floor(lastItemIndex / itemsPerPage) + 1; // if remainder, need an extra page
 
   const canGetNext = currentPage < maxPage;
