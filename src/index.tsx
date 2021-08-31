@@ -31,7 +31,7 @@ export const usePagination = ({initialItemCount, initialPageNumber = 1, initialI
   const canGetPrev = currentPage > 1;
 
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = currentPage !== maxPage ? startIndex + itemsPerPage : lastItemIndex;
+  const endIndex = currentPage !== maxPage ? startIndex + itemsPerPage : initialItemCount;
 
   const setItemsPerPage = (newItemsPerPage: number) => {
     if (newItemsPerPage < 1) {
@@ -67,6 +67,13 @@ export const usePagination = ({initialItemCount, initialPageNumber = 1, initialI
     const pageNumber = Math.max(1, page);
     setCurrentPage((_currentPage) => Math.min(pageNumber, maxPage));
   };
+
+  // if currently on x page, and item count changes to a lower number so that currentPage > maxPage, goto max page
+  React.useEffect(() => {
+    if (currentPage > maxPage) {
+      setCurrentPage(maxPage);
+    }
+  }, [initialItemCount]);
 
   return {
     startIndex,
