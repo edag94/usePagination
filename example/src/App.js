@@ -5,7 +5,7 @@ import { usePagination } from 'use-pagination-hook'
 const App = () => {
   const items = [1,2,3,4,5]
   const [itemsPerPageToSetOnClick, setItemsPerPageToSetOnClick] = React.useState(10)
-  const api = usePagination({initialItemCount: items.length, initialPageNumber: 1, initialItemsPerPage: 10})
+  const api = usePagination({itemCount: items.length, initialPageNumber: 1, initialItemsPerPage: 10})
   const itemsToDisplay = api.getCurrentData(items)
   return (
     <div>

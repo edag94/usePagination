@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 export interface PaginationConfig {
-  initialItemCount: number,
+  itemCount: number,
   initialPageNumber: number,
   initialItemsPerPage: number
 }
@@ -20,18 +20,18 @@ export interface PaginationReturn {
   setItemsPerPage: (newItemsPerPage: number) => void;
 }
 
-export const usePagination = ({initialItemCount, initialPageNumber = 1, initialItemsPerPage = 10}: PaginationConfig): PaginationReturn => {
+export const usePagination = ({itemCount, initialPageNumber = 1, initialItemsPerPage = 10}: PaginationConfig): PaginationReturn => {
   const [currentPage, setCurrentPage] = React.useState(initialPageNumber);
   const [itemsPerPage, _setItemsPerPage] = React.useState(initialItemsPerPage);
 
-  const lastItemIndex = initialItemCount - 1;
+  const lastItemIndex = itemCount - 1;
   const maxPage = Math.floor(lastItemIndex / itemsPerPage) + 1; // if remainder, need an extra page
 
   const canGetNext = currentPage < maxPage;
   const canGetPrev = currentPage > 1;
 
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = currentPage !== maxPage ? startIndex + itemsPerPage : initialItemCount;
+  const endIndex = currentPage !== maxPage ? startIndex + itemsPerPage : itemCount;
 
   const setItemsPerPage = (newItemsPerPage: number) => {
     if (newItemsPerPage < 1) {
@@ -73,7 +73,7 @@ export const usePagination = ({initialItemCount, initialPageNumber = 1, initialI
     if (currentPage > maxPage) {
       setCurrentPage(maxPage);
     }
-  }, [initialItemCount]);
+  }, [itemCount]);
 
   return {
     startIndex,

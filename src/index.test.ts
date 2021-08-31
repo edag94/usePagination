@@ -6,20 +6,12 @@ jest.useFakeTimers();
 
 describe("usePagination", () => {
   it("works correctly", () => {
-    const data = (() => {
-      const data: number[] = [];
-      for (let i = 0; i < 100; ++i) {
-        data.push(i);
-      }
-      return data;
-    })();
-
     const config: PaginationConfig = {
-      initialItemCount: data.length,
+      itemCount: 100,
       initialPageNumber: 1,
       initialItemsPerPage: 10,
     };
-    const { result } = renderHook(() => usePagination(config));
+    const { result, rerender } = renderHook(() => usePagination(config));
 
     const initExpectedState: StateToValidate = {
       startIndex: 0,
@@ -113,6 +105,24 @@ describe("usePagination", () => {
       canGetPrev: true,
       currentPage: 2,
       maxPage: 5,
+    };
+    validateState(result.current, expectedState);
+
+    // test rerender of hook with less items, and currentPage > maxPage. An example of when this would happen is with filtering
+    act(() => {
+      result.current.setItemsPerPage(10);
+      result.current.jump(result.current.maxPage);
+    });
+    config.itemCount = 15;
+    rerender();
+
+    expectedState = {
+      startIndex: 10,
+      endIndex: 15,
+      canGetNext: false,
+      canGetPrev: true,
+      currentPage: 2, // should go to maxPage
+      maxPage: 2,
     };
     validateState(result.current, expectedState);
 
