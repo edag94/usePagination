@@ -1,5 +1,5 @@
-import { PaginationConfig, PaginationReturn, usePagination } from "./";
 import { renderHook, act } from "@testing-library/react-hooks";
+import { PaginationConfig, usePagination, UsePaginationResult } from ".";
 
 // mock timer using jest
 jest.useFakeTimers();
@@ -8,18 +8,18 @@ describe("usePagination", () => {
   it("works correctly", () => {
     const config: PaginationConfig = {
       itemCount: 100,
-      initialPageNumber: 1,
+      initialPageNumber: 0,
       initialItemsPerPage: 10,
     };
     const { result, rerender } = renderHook(() => usePagination(config));
 
     const initExpectedState: StateToValidate = {
-      startIndex: 0,
-      endIndex: 10,
+      firstItemIndex: 0,
+      lastItemIndex: 9,
       canGetNext: true,
       canGetPrev: false,
-      currentPage: 1,
-      maxPage: 10,
+      currentPageIndex: 0,
+      lastPageIndex: 9,
     };
     validateState(result.current, initExpectedState);
 
@@ -29,12 +29,12 @@ describe("usePagination", () => {
     });
 
     let expectedState: StateToValidate = {
-      startIndex: 10,
-      endIndex: 20,
+      firstItemIndex: 10,
+      lastItemIndex: 19,
       canGetNext: true,
       canGetPrev: true,
-      currentPage: 2,
-      maxPage: 10,
+      currentPageIndex: 1,
+      lastPageIndex: 9,
     };
     validateState(result.current, expectedState);
 
@@ -47,16 +47,16 @@ describe("usePagination", () => {
 
     // Jump to middle of data
     act(() => {
-      result.current.jump(initExpectedState.maxPage / 2);
+      result.current.jump(Math.floor(initExpectedState.lastPageIndex / 2));
     });
 
     expectedState = {
-      startIndex: 40,
-      endIndex: 50,
+      firstItemIndex: 40,
+      lastItemIndex: 49,
       canGetNext: true,
       canGetPrev: true,
-      currentPage: 5,
-      maxPage: 10,
+      currentPageIndex: 4,
+      lastPageIndex: 9,
     };
     validateState(result.current, expectedState);
 
@@ -65,90 +65,104 @@ describe("usePagination", () => {
       result.current.setItemsPerPage(7);
     });
 
-    // expect startIndex <= prevStartIndex <= endIndex
+    // expect firstItemIndex <= prevfirstItemIndex <= lastItemIndex
     expectedState = {
-      startIndex: 35,
-      endIndex: 42,
+      firstItemIndex: 35,
+      lastItemIndex: 41,
       canGetNext: true,
       canGetPrev: true,
-      currentPage: 6,
-      maxPage: 15,
+      currentPageIndex: 5,
+      lastPageIndex: 14,
     };
     validateState(result.current, expectedState);
 
-    // Set new itemsPerPage, test edge case where startIndex === prevStartIndex, so where prevStartIndex % itemsPerPage === 0
+    // Set new itemsPerPage, test edge case where firstItemIndex === prevfirstItemIndex, so where prevfirstItemIndex % itemsPerPage === 0
     act(() => {
       result.current.setItemsPerPage(5);
     });
 
-    // expect startIndex === prevStartIndex
+    // expect firstItemIndex === prevfirstItemIndex
     expectedState = {
-      startIndex: 35,
-      endIndex: 40,
+      firstItemIndex: 35,
+      lastItemIndex: 39,
       canGetNext: true,
       canGetPrev: true,
-      currentPage: 8,
-      maxPage: 20,
+      currentPageIndex: 7,
+      lastPageIndex: 19,
     };
     validateState(result.current, expectedState);
 
-    // Set new itemsPerPage, test edge case where endIndex === prevEndIndex
+    // Set new itemsPerPage, test edge case where lastItemIndex === prevlastItemIndex
     act(() => {
       result.current.setItemsPerPage(20);
     });
 
-    // expect endIndex === prevEndIndex
+    // expect lastItemIndex === prevlastItemIndex
     expectedState = {
-      startIndex: 20,
-      endIndex: 40,
+      firstItemIndex: 20,
+      lastItemIndex: 39,
       canGetNext: true,
       canGetPrev: true,
-      currentPage: 2,
-      maxPage: 5,
+      currentPageIndex: 1,
+      lastPageIndex: 4,
     };
     validateState(result.current, expectedState);
 
-    // test rerender of hook with less items, and currentPage > maxPage. An example of when this would happen is with filtering
+    // test rerender of hook with less items, and currentPageIndex > lastPageIndex. An example of when this would happen is with filtering
     act(() => {
       result.current.setItemsPerPage(10);
-      result.current.jump(result.current.maxPage);
+      result.current.jump(result.current.lastPageIndex);
     });
     config.itemCount = 15;
     rerender();
 
     expectedState = {
-      startIndex: 10,
-      endIndex: 15,
+      firstItemIndex: 10,
+      lastItemIndex: 14,
       canGetNext: false,
       canGetPrev: true,
-      currentPage: 2, // should go to maxPage
-      maxPage: 2,
+      currentPageIndex: 1, // should go to lastPageIndex
+      lastPageIndex: 1,
     };
     validateState(result.current, expectedState);
 
-    // Set new itemsPerPage, test edge case where itemsPerPage < 1
+    // test rerender of hook with 0 items. An example of when this would happen is with filtering
+    config.itemCount = 0;
+    rerender();
+
+    expectedState = {
+      firstItemIndex: 0,
+      lastItemIndex: 0,
+      canGetNext: false,
+      canGetPrev: false,
+      currentPageIndex: 0,
+      lastPageIndex: 0,
+    };
+    validateState(result.current, expectedState);
+
+    // Set new itemsPerPage, test edge case where itemsPerPage < 0
     const errorThrowing = () => {
-      result.current.setItemsPerPage(0);
+      result.current.setItemsPerPage(-1);
     };
     expect(errorThrowing).toThrowError();
   });
 });
 
-type StateToValidate = Pick<
-  PaginationReturn,
-  | "startIndex"
-  | "endIndex"
+type PropertiesToValidate = Extract<
+  keyof UsePaginationResult,
+  | "firstItemIndex"
+  | "lastItemIndex"
   | "canGetNext"
   | "canGetPrev"
-  | "currentPage"
-  | "maxPage"
+  | "currentPageIndex"
+  | "lastPageIndex"
 >;
 
-const validateState = (
-  hookResult: PaginationReturn,
-  expectedState: StateToValidate
-) => {
+type StateToValidate = Pick<UsePaginationResult, PropertiesToValidate>;
+
+const validateState = (hookResult: UsePaginationResult, expectedState: StateToValidate) => {
   for (const property in expectedState) {
-    expect(hookResult[property]).toBe(expectedState[property]);
+    const prop = property as PropertiesToValidate;
+    expect(hookResult[prop]).toBe(expectedState[prop]);
   }
 };
